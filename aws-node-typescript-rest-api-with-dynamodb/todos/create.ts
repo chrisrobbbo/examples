@@ -6,39 +6,47 @@ import { DynamoDB } from 'aws-sdk'
 
 const dynamoDb = new DynamoDB.DocumentClient()
 
-module.exports.create = (event, context, callback) => {
-  const timestamp = new Date().getTime()
+export function create (event, context, callback) {
   const data = JSON.parse(event.body)
-  if (typeof data.text !== 'string') {
-    console.error('Validation Failed')
-    callback(new Error('Couldn\'t create the todo item.'))
-    return
-  }
-
   const params = {
     TableName: process.env.DYNAMODB_TABLE,
     Item: {
-      id: uuid.v1(),
-      text: data.text,
-      checked: false,
-      createdAt: timestamp,
-      updatedAt: timestamp
+      id: data.id,
+      message: data.message,
+      status: data.status
     }
   }
 
-  // write the todo to the database
   dynamoDb.put(params, (error, result) => {
-    // handle potential errors
     if (error) {
       console.error(error)
-      callback(new Error('Couldn\'t create the todo item.'))
+      callback(new Error('Couldn\'t create the drain-bine item.'))
       return
     }
 
-    // create a response
     const response = {
       statusCode: 200,
-      body: JSON.stringify(result.Item)
+      body: JSON.stringify(result)
+    }
+    callback(null, response)
+  })
+}
+
+export function list (event, context, callback) {
+  const params = {
+    TableName: process.env.DYNAMODB_TABLE
+  }
+
+  dynamoDb.scan(params, (error, result) => {
+    if (error) {
+      console.error(error)
+      callback(new Error('Couldn\'t get drain-bine table.'))
+      return
+    }
+
+    const response = {
+      statusCode: 200,
+      body: JSON.stringify(result)
     }
     callback(null, response)
   })
